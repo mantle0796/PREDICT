@@ -29,8 +29,8 @@ const TrendingPredictionsPage: React.FC = () => {
   const [dailyClaimAmount, setDailyClaimAmount] = useState(5.25);
   const [withdrawAmount, setWithdrawAmount] = useState(250.75);
 
-  // Sample trending predictions data
-  const trendingPredictions: TrendingPrediction[] = [
+  // Sample trending predictions data with updated state management
+  const [trendingPredictions, setTrendingPredictions] = useState<TrendingPrediction[]>([
     {
       id: 1,
       title: "Will Bitcoin Reach $100,000 in 2024?",
@@ -71,7 +71,7 @@ const TrendingPredictionsPage: React.FC = () => {
         }
       ]
     }
-  ];
+  ]);
 
   const connectMetamask = async () => {
     try {
@@ -102,17 +102,54 @@ const TrendingPredictionsPage: React.FC = () => {
       return;
     }
 
-    console.log('Bet Placed', {
-      predictionTitle: selectedPrediction.title,
-      selectedOption: selectedOption.text,
-      betAmount: parsedBetAmount
+    // Update the prediction data
+    const updatedPredictions = trendingPredictions.map(prediction => {
+      if (prediction.id === selectedPrediction.id) {
+        return {
+          ...prediction,
+          totalVoters: prediction.totalVoters + 1,
+          options: prediction.options.map(option => {
+            if (option.id === selectedOption.id) {
+              return {
+                ...option,
+                voters: option.voters + 1,
+                chanceOfWinning: calculateNewChanceOfWinning(prediction, option)
+              };
+            }
+            return {
+              ...option,
+              chanceOfWinning: calculateNewChanceOfWinning(prediction, option, selectedOption.id)
+            };
+          })
+        };
+      }
+      return prediction;
     });
+
+    setTrendingPredictions(updatedPredictions);
 
     // Reset modal state
     setShowBetModal(false);
     setBetAmount('');
     setSelectedPrediction(null);
     setSelectedOption(null);
+  };
+
+  // Calculate new chance of winning when a bet is placed
+  const calculateNewChanceOfWinning = (
+    prediction: TrendingPrediction, 
+    currentOption: PredictionOption, 
+    selectedOptionId?: number
+  ) => {
+    const totalVoters = prediction.totalVoters + 1;
+    
+    if (selectedOptionId) {
+      // Adjust other option's chance when a bet is placed
+      return (currentOption.voters / totalVoters) * 100;
+    }
+    
+    // When initial percentage is calculated
+    return (currentOption.voters / totalVoters) * 100;
   };
 
   const handleDailyClaim = () => {
@@ -127,16 +164,16 @@ const TrendingPredictionsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0B2213] text-white overflow-hidden relative">
-      {/* Navigation - SAME AS PREVIOUS PAGE */}
+      {/* Navigation */}
       <nav className="px-8 py-6 flex justify-between items-center">
-      <Link href="/">
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          className="text-2xl font-bold"
-        >
-          PREDICT
-        </motion.div>
+        <Link href="/">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="text-2xl font-bold"
+          >
+            PREDICT
+          </motion.div>
         </Link>
         
         <div className="flex items-center gap-6">
@@ -197,38 +234,57 @@ const TrendingPredictionsPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  {prediction.options.map((option) => (
-                    <div 
-                      key={option.id} 
-                      className="flex items-center justify-between bg-[#2A563A] p-4 rounded-md"
-                    >
-                      <div className="flex-grow">
-                        <div className="flex justify-between items-center">
-                          <span>{option.text}</span>
-                          <span className="text-[#44FF73] font-bold">
-                            {option.chanceOfWinning.toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-[#0B2213] rounded-full h-2 mt-2">
-                          <div 
-                            className="bg-[#44FF73] h-2 rounded-full" 
-                            style={{ width: `${option.chanceOfWinning}%` }}
-                          ></div>
-                        </div>
-                        <p className="text-sm text-white/60 mt-1">
-                          {option.voters} Voters
-                        </p>
-                      </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        onClick={() => openBetModal(prediction, option)}
-                        className="ml-4 px-4 py-2 bg-[#44FF73] text-black rounded-md"
-                      >
-                        Predict
-                      </motion.button>
+                {/* Single Bar Visualization */}
+                <div className="w-full bg-[#0B2213] rounded-full h-10 overflow-hidden relative mb-4">
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 bg-red-600" 
+                    style={{ 
+                      width: `${prediction.options[1].chanceOfWinning}%`, 
+                      backgroundColor: 'rgb(220, 38, 38)' 
+                    }}
+                  />
+                  <div 
+                    className="absolute right-0 top-0 bottom-0 bg-green-600" 
+                    style={{ 
+                      width: `${prediction.options[0].chanceOfWinning}%`, 
+                      backgroundColor: 'rgb(34, 197, 94)' 
+                    }}
+                  />
+                  <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white/20 transform -translate-x-1/2 z-10" />
+                </div>
+
+                {/* Option Buttons */}
+                <div className="flex justify-between">
+                  <div className="flex-1 text-left">
+                    <div className="flex justify-between items-center">
+                      <span>{prediction.options[1].text}</span>
+                      <span className="text-red-400 font-bold">
+                        {prediction.options[1].chanceOfWinning.toFixed(1)}%
+                      </span>
                     </div>
-                  ))}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => openBetModal(prediction, prediction.options[1])}
+                      className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md"
+                    >
+                      Predict No
+                    </motion.button>
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-400 font-bold">
+                        {prediction.options[0].chanceOfWinning.toFixed(1)}%
+                      </span>
+                      <span>{prediction.options[0].text}</span>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => openBetModal(prediction, prediction.options[0])}
+                      className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md"
+                    >
+                      Predict Yes
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -267,7 +323,7 @@ const TrendingPredictionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Bet Modal - SAME AS PREVIOUS PAGE */}
+      {/* Bet Modal */}
       <AnimatePresence>
         {showBetModal && (
           <motion.div
@@ -290,7 +346,9 @@ const TrendingPredictionsPage: React.FC = () => {
                 <p className="text-white/80 text-center mb-2">
                   {selectedPrediction?.title}
                 </p>
-                <p className="text-[#44FF73] text-center font-bold">
+                <p className={`text-center font-bold ${
+                  selectedOption?.id === 1 ? 'text-green-400' : 'text-red-400'
+                }`}>
                   {selectedOption?.text}
                 </p>
               </div>
@@ -317,60 +375,21 @@ const TrendingPredictionsPage: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   onClick={placeBet}
-                  className="flex-1 px-4 py-2 bg-[#44FF73] text-black rounded-md font-medium"
-                >
-                  PLACE BET
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Footer - SAME AS PREVIOUS PAGE */}
-      <footer className="bg-[#0A1F10] py-16">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div>
-              <h4 className="text-2xl font-bold mb-4">PREDICT</h4>
-              <p className="text-white/60">
-                Making blockchain predictions accessible for everyone.
-              </p>
-            </div>
-            <div>
-              <h5 className="font-bold mb-4">Product</h5>
-              <ul className="space-y-2 text-white/60">
-                <li><a href="#" className="hover:text-[#44FF73]">Features</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Pricing</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">API</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Documentation</a></li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold mb-4">Company</h5>
-              <ul className="space-y-2 text-white/60">
-                <li><a href="#" className="hover:text-[#44FF73]">About</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Blog</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Careers</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold mb-4">Legal</h5>
-              <ul className="space-y-2 text-white/60">
-                <li><a href="#" className="hover:text-[#44FF73]">Privacy</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Terms</a></li>
-                <li><a href="#" className="hover:text-[#44FF73]">Security</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/10 mt-12 pt-8 text-center text-white/40">
-            <p>© {new Date().getFullYear()} PREDICT. All rights reserved.</p>
-          </div>
+                  className={`flex-1 px-4 py-2 rounded-md font-medium ${
+                    selectedOption?.id === 1 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-red-500 text-white'
+                      }`}
+                      >
+                      PLACE BET
+                    </motion.button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </footer>
-    </div>
-  );
-};
-
-export default TrendingPredictionsPage;
+      );
+    };
+    
+    export default TrendingPredictionsPage;
