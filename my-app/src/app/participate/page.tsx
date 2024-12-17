@@ -177,7 +177,7 @@ const TrendingPredictionsPage: React.FC = () => {
 
   const handleDailyClaim = () => {
     console.log('Daily claim of', dailyClaimAmount, 'CC Tokens');
-    alert(`Claimed ${dailyClaimAmount} CC Tokens`);
+    alert(`Claimed ${dailyClaimAmount} PRED Tokens`);
   };
 
   const handleWithdraw = async () => {
@@ -190,7 +190,7 @@ const TrendingPredictionsPage: React.FC = () => {
       const questContract = new ethers.Contract(contractAddress, pred.abi, signer)
       await (await questContract.mint(address, ethers.parseUnits(parseInt(amount).toString(), 18))).wait();
     }
-    alert(`Withdrawn ${withdrawAmount} CC Tokens`);
+    alert(`Withdrawn ${withdrawAmount} PRED Tokens`);
   };
 
   function truncateAddress(address: String = window.address.toString(), startLength: number = 6, endLength: number = 4) {
@@ -335,7 +335,7 @@ return (
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Daily Claim</h3>
-            <span className="text-[#44FF73] font-medium">{dailyClaimAmount} CC</span>
+            <span className="text-[#44FF73] font-medium">{dailyClaimAmount} PRED</span>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -349,7 +349,7 @@ return (
         <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Withdraw</h3>
-            <span className="text-[#44FF73] font-medium">{withdrawAmount} CC</span>
+            <span className="text-[#44FF73] font-medium">{withdrawAmount} PRED</span>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}

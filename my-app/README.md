@@ -1,3 +1,13 @@
+Add this PRED token as manually into your wallet on MANTLE (MNT) Chain
+
+Contract Address = 0x3e57Bf94B989694b9EbF963d93f5311A1C236fca
+
+Verify this Contract -> [Verify PRED](https://explorer.sepolia.mantle.xyz/address/0x3e57Bf94B989694b9EbF963d93f5311A1C236fca)
+
+
+-------------
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

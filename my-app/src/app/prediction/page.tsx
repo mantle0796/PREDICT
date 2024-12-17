@@ -256,7 +256,7 @@ const PredictionsPage: React.FC = () => {
               
               <div className="text-center mb-6">
                 <p className="text-white/80 mb-4">
-                  Creating a prediction requires <span className="text-[#44FF73] font-bold">1 CC Token</span>
+                  Creating a prediction requires <span className="text-[#44FF73] font-bold">1 PRED Token</span>
                 </p>
                 <div className="flex items-center justify-center mb-4">
                   <svg className="w-16 h-16 text-[#44FF73]" fill="currentColor" viewBox="0 0 20 20">
@@ -264,7 +264,7 @@ const PredictionsPage: React.FC = () => {
                   </svg>
                 </div>
                 <p className="text-white/60 text-sm">
-                  Confirm prediction creation and spend 1 CC Token
+                  Confirm prediction creation and spend 1 PRED Token
                 </p>
               </div>
 
