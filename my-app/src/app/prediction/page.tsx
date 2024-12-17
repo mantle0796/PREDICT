@@ -2,6 +2,17 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
+import { BrowserProvider, ethers } from 'ethers';
+import pred from "@/app/contractInfo/abi.json"
+import {contractAddress} from "@/app/contractInfo/address.json"
+import router from 'next/router';
+import { isObject } from 'util';
+declare global {
+  interface Window {
+    ethereum?: any; // Declare the ethereum object
+    address?: any;
+  }
+}
 
 interface PredictionOption {
   id: number;
@@ -34,7 +45,9 @@ const PredictionsPage: React.FC = () => {
     // Placeholder for Metamask connection logic
     try {
       if ((window as any).ethereum) {
-        await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+        window.address = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+        console.log((window.address));
+        
         setIsMetamaskConnected(true);
       } else {
         alert('Metamask not found. Please install Metamask.');
@@ -62,7 +75,7 @@ const PredictionsPage: React.FC = () => {
       }
   };
 
-  const confirmPrediction = () => {
+  const confirmPrediction = async () => {
     // Actual prediction creation logic
     console.log('Prediction Submitted', {
       title: predictionTitle,
@@ -70,8 +83,26 @@ const PredictionsPage: React.FC = () => {
       options: options.map(opt => opt.text)
     });
     setShowTokenModal(false);
+    if (window.ethereum != undefined) {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner()
+      const questContract = new ethers.Contract(contractAddress, pred.abi, signer)
+      await (await questContract.transfer("0xFA0e1F9B7fCa4B2d0fAcd724f604c676B633424F", ethers.parseUnits(parseInt("1").toString(), 18))).wait();
+      alert('Prediction Topic Added 🎉🎉');
+    }
+    // router.push('/')
     // Reset form or navigate to another page
   };
+
+  function truncateAddress(address: String = window.address.toString(), startLength: number = 6, endLength: number = 4) {
+    if (address.length <= startLength + endLength) {
+      return address;
+
+    }
+    const start = address.substring(0, startLength);
+    const end = address.substring(address.length - endLength); return `${start}...${end}`;
+  }
+
 
   return (
     <div className="min-h-screen bg-[#0B2213] text-white overflow-hidden">
@@ -111,7 +142,7 @@ const PredictionsPage: React.FC = () => {
                 : 'border border-[#44FF73] text-[#44FF73]'
             }`}
           >
-            {isMetamaskConnected ? 'CONNECTED' : 'CONNECT METAMASK'}
+            {isMetamaskConnected ? truncateAddress() : 'CONNECT METAMASK'}
           </motion.button>
         </div>
       </nav>
