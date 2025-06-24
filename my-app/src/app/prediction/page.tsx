@@ -4,9 +4,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { BrowserProvider, ethers } from 'ethers';
 import pred from "@/app/contractInfo/abi.json"
-import {contractAddress} from "@/app/contractInfo/address.json"
 import router from 'next/router';
-import { isObject } from 'util';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { useWalletClient } from '@thalalabs/surf/hooks';
+import { aptosClient } from '../utils/aptosClient';
+import { toast } from 'sonner';
+import { PREDICT_ABI } from "@/app/utils/predict"
+import { WalletSelector } from '@/components/ui/WalletSelector';
+
 declare global {
   interface Window {
     ethereum?: any; // Declare the ethereum object
@@ -30,7 +35,7 @@ const PredictionsPage: React.FC = () => {
   const addOption = () => {
     if (newOption.trim()) {
       setOptions([
-        ...options, 
+        ...options,
         { id: Date.now(), text: newOption.trim() }
       ]);
       setNewOption('');
@@ -47,7 +52,7 @@ const PredictionsPage: React.FC = () => {
       if ((window as any).ethereum) {
         window.address = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
         console.log((window.address));
-        
+
         setIsMetamaskConnected(true);
       } else {
         alert('Metamask not found. Please install Metamask.');
@@ -65,15 +70,57 @@ const PredictionsPage: React.FC = () => {
     //     description: predictionDescription,
     //     options: options.map(opt => opt.text)
     //   });
-      // Add actual submission logic here
+    // Add actual submission logic here
     // Validate prediction before showing token modal
     if (predictionTitle && predictionDescription && options.length > 1) {
-        // Show the token modal
-        setShowTokenModal(true);
-      } else {
-        alert('Please fill in all required fields and add at least two options');
-      }
+      // Show the token modal
+      setShowTokenModal(true);
+    } else {
+      alert('Please fill in all required fields and add at least two options');
+    }
   };
+
+  const { account, connected, disconnect, wallet } = useWallet();
+  // Uncomment and use the wallet client hook to get the client instance
+  const { client } = useWalletClient();
+  const address = "0x5a5d125b5d1c3b57cc8b0901196139bff53c53d7d27dc8c27edea4190fa7f381";
+
+  const donateInititate = async () => {
+    if (!client) {
+      return;
+    }
+
+    try {
+      const committedTransaction = await client.useABI(PREDICT_ABI).transfer({
+        type_arguments: [],
+        arguments: [address, 100000000],
+      });
+      const executedTransaction = await aptosClient().waitForTransaction({
+        transactionHash: committedTransaction.hash,
+      });
+      // queryClient.invalidateQueries({
+      //   queryKey: ["message-content"],
+      // });
+      toast(
+        <span style={{ fontSize: 15, fontWeight: 400 }}>
+          Transaction successful! <br />
+          Hash:{' '}
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${executedTransaction.hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-blue-600"
+            style={{ fontWeight: 400 }}
+          >
+            {executedTransaction.hash.slice(0, 8)}...{executedTransaction.hash.slice(-6)}
+          </a>
+        </span>
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   const confirmPrediction = async () => {
     // Actual prediction creation logic
@@ -83,13 +130,15 @@ const PredictionsPage: React.FC = () => {
       options: options.map(opt => opt.text)
     });
     setShowTokenModal(false);
-    if (window.ethereum != undefined) {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner()
-      const questContract = new ethers.Contract(contractAddress, pred.abi, signer)
-      await (await questContract.transfer("0xFA0e1F9B7fCa4B2d0fAcd724f604c676B633424F", ethers.parseUnits(parseInt("1").toString(), 18))).wait();
-      alert('Prediction Topic Added 🎉🎉');
-    }
+    donateInititate()
+    // if (window.ethereum != undefined) {
+    //   const provider = new BrowserProvider(window.ethereum);
+    //   const signer = await provider.getSigner()
+    //   const questContract = new ethers.Contract(contractAddress, pred.abi, signer)
+    //   await (await questContract.transfer("0xFA0e1F9B7fCa4B2d0fAcd724f604c676B633424F", ethers.parseUnits(parseInt("1").toString(), 18))).wait();
+    //   alert('Prediction Topic Added 🎉🎉');
+    // }
+
     // router.push('/')
     // Reset form or navigate to another page
   };
@@ -108,42 +157,43 @@ const PredictionsPage: React.FC = () => {
     <div className="min-h-screen bg-[#0B2213] text-white overflow-hidden">
       {/* Navigation */}
       <nav className="px-8 py-6 flex justify-between items-center">
-      <Link href="/">
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          className="text-2xl font-bold"
-        >
-          PREDICT
-        </motion.div>
+        <Link href="/">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-2xl font-bold"
+          >
+            PREDICT
+          </motion.div>
         </Link>
-        
+
         <div className="flex items-center gap-6">
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             MY PREDICTIONS
           </motion.a>
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             MARKETS
           </motion.a>
-          <motion.button
+          {/* <motion.button
             onClick={connectMetamask}
             whileHover={{ scale: 1.05 }}
-            className={`px-6 py-2 rounded-md font-medium ${
-              isMetamaskConnected 
-                ? 'bg-[#44FF73] text-black' 
-                : 'border border-[#44FF73] text-[#44FF73]'
-            }`}
+            className={`px-6 py-2 rounded-md font-medium ${isMetamaskConnected
+              ? 'bg-[#44FF73] text-black'
+              : 'border border-[#44FF73] text-[#44FF73]'
+              }`}
           >
             {isMetamaskConnected ? truncateAddress() : 'CONNECT METAMASK'}
-          </motion.button>
+          </motion.button> */}
+
+          <WalletSelector/>
         </div>
       </nav>
 
@@ -162,7 +212,7 @@ const PredictionsPage: React.FC = () => {
           <div className="space-y-6">
             <div>
               <label className="block mb-2 text-white/80">Prediction Title</label>
-              <input 
+              <input
                 type="text"
                 value={predictionTitle}
                 onChange={(e) => setPredictionTitle(e.target.value)}
@@ -173,7 +223,7 @@ const PredictionsPage: React.FC = () => {
 
             <div>
               <label className="block mb-2 text-white/80">Prediction Description</label>
-              <textarea 
+              <textarea
                 value={predictionDescription}
                 onChange={(e) => setPredictionDescription(e.target.value)}
                 placeholder="Provide context and details about your prediction"
@@ -191,7 +241,7 @@ const PredictionsPage: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex items-center mb-2"
                 >
-                  <input 
+                  <input
                     type="text"
                     value={option.text}
                     readOnly
@@ -205,9 +255,9 @@ const PredictionsPage: React.FC = () => {
                   </button>
                 </motion.div>
               ))}
-              
+
               <div className="flex">
-                <input 
+                <input
                   type="text"
                   value={newOption}
                   onChange={(e) => setNewOption(e.target.value)}
@@ -253,7 +303,7 @@ const PredictionsPage: React.FC = () => {
               <h2 className="text-2xl font-bold mb-4 text-center">
                 Prediction Creation Fee
               </h2>
-              
+
               <div className="text-center mb-6">
                 <p className="text-white/80 mb-4">
                   Creating a prediction requires <span className="text-[#44FF73] font-bold">1 PRED Token</span>

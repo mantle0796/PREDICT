@@ -3,6 +3,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
+import { WalletSelector } from "@/components/ui/WalletSelector";
+import { aptosClient } from "@/app/utils/aptosClient";
+import { PREDICT_ABI } from "@/app/utils/predict"
+import { toast } from "../components/ui/use-toast"
+import { useWalletClient } from "@thalalabs/surf/hooks";
+import { useWallet } from "@aptos-labs/wallet-adapter-react"
+
+
 interface FloatingElementProps {
   children: React.ReactNode;
   delay?: number;
@@ -64,69 +72,104 @@ const LandingPage: React.FC = () => {
     }
   ];
 
+  const { account, connected, disconnect, wallet } = useWallet();
+  // Uncomment and use the wallet client hook to get the client instance
+  const { client } = useWalletClient();
+  const address = "0x5a5d125b5d1c3b57cc8b0901196139bff53c53d7d27dc8c27edea4190fa7f381";
+
+  const donateInititate = async () => {
+    if (!client) {
+      return;
+    }
+
+    try {
+      const committedTransaction = await client.useABI(PREDICT_ABI).mint({
+        type_arguments: [],
+        arguments: [account?.address.toString(), 1000000000],
+      });
+      const executedTransaction = await aptosClient().waitForTransaction({
+        transactionHash: committedTransaction.hash,
+      });
+      // queryClient.invalidateQueries({
+      //   queryKey: ["message-content"],
+      // });
+      toast({
+        title: "Success",
+        description: `Transaction succeeded, hash: ${executedTransaction.hash}`,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-[#0B2213] text-white overflow-hidden">
       {/* Navigation */}
       <nav className="px-8 py-6 flex justify-between items-center">
         <Link href="/">
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          className="text-2xl font-bold"
-        >
-          PREDICT
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-2xl font-bold"
+          >
+            PREDICT
+          </motion.div>
         </Link>
-        
+
         <div className="flex items-center gap-6">
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             HOW IT WORKS
           </motion.a>
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             PRICING
           </motion.a>
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             FAQS
           </motion.a>
-          <motion.a 
+          <motion.a
             whileHover={{ scale: 1.05 }}
             className="text-white/80 hover:text-white"
             href="#"
           >
             BLOG
           </motion.a>
-          <motion.button
+          {/* <motion.button
             whileHover={{ scale: 1.05 }}
             className="px-4 py-2 text-white/90 hover:text-white"
             type="button"
           >
             LOG IN
-          </motion.button>
+          </motion.button> */}
+
+          <WalletSelector />
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             className="px-6 py-2 bg-[#44FF73] text-black rounded-md font-medium"
             type="button"
+            onClick={donateInititate}
           >
-            GET STARTED
+            CLAIM 10 PREDICT
           </motion.button>
         </div>
       </nav>
 
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-8 pt-20 relative">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -137,33 +180,33 @@ const LandingPage: React.FC = () => {
             <br />
             <span className="text-[#44FF73]">ANALYTICS</span>
           </h1>
-          
+
           <p className="text-xl text-white/80 max-w-2xl mx-auto mb-8">
             Make informed decisions with blockchain-powered predictions.
             Access real-time insights without complexity, so you can focus
             on growing your business.
           </p>
 
-         <div className='p-4'>
-         <Link href="/prediction">
-         <motion.button
-            whileHover={{ scale: 1.05 }}
-            className="px-8 py-3 bg-[#44FF73] text-black rounded-md font-medium text-lg"
-            type="button"
-          >
-            CREATE PREDICTION
-          </motion.button>
-         </Link>
-         </div>
-        <Link href="/participate">
-        <motion.button
-            whileHover={{ scale: 1.05 }}
-            className="px-8 py-3 bg-[#44FF73] text-black rounded-md font-medium text-lg"
-            type="button"
-          >
-            PARTICIPATE
-          </motion.button>
-        </Link>
+          <div className='p-4'>
+            <Link href="/prediction">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                className="px-8 py-3 bg-[#44FF73] text-black rounded-md font-medium text-lg"
+                type="button"
+              >
+                CREATE PREDICTION
+              </motion.button>
+            </Link>
+          </div>
+          <Link href="/participate">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              className="px-8 py-3 bg-[#44FF73] text-black rounded-md font-medium text-lg"
+              type="button"
+            >
+              PARTICIPATE
+            </motion.button>
+          </Link>
         </motion.div>
 
         {/* Mountain Illustration */}
@@ -175,13 +218,13 @@ const LandingPage: React.FC = () => {
         >
           <svg viewBox="0 0 1200 400" className="w-full">
             {/* Background Mountains */}
-            <path 
-              d="M0 400 L300 150 L600 350 L900 100 L1200 400 Z" 
+            <path
+              d="M0 400 L300 150 L600 350 L900 100 L1200 400 Z"
               fill="#1A3B25"
             />
             {/* Snow-capped Mountains */}
-            <path 
-              d="M400 400 L600 200 L800 400 Z" 
+            <path
+              d="M400 400 L600 200 L800 400 Z"
               fill="#B4E1E7"
             />
             {/* Trees */}
@@ -195,29 +238,29 @@ const LandingPage: React.FC = () => {
             {/* Sun */}
             <circle cx="900" cy="150" r="30" fill="#FF6B4A" />
             {/* Clouds */}
-            <path 
-              d="M100 100 Q130 80 160 100 Q190 120 220 100" 
-              stroke="#FFB4A1" 
-              fill="none" 
+            <path
+              d="M100 100 Q130 80 160 100 Q190 120 220 100"
+              stroke="#FFB4A1"
+              fill="none"
               strokeWidth="2"
             />
-            <path 
-              d="M800 150 Q830 130 860 150 Q890 170 920 150" 
-              stroke="#FFB4A1" 
-              fill="none" 
+            <path
+              d="M800 150 Q830 130 860 150 Q890 170 920 150"
+              stroke="#FFB4A1"
+              fill="none"
               strokeWidth="2"
             />
           </svg>
         </motion.div>
 
         {/* Calculate Button */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1 }}
           className="absolute bottom-8 right-8"
         >
-          <button 
+          <button
             type="button"
             className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-md"
           >
