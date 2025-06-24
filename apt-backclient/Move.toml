@@ -1,0 +1,15 @@
+[package]
+name = "predict"
+version = "1.0.0"
+authors = []
+
+[addresses]
+predict_token = "0xd3b2de75d91b311610e534e86d0767fc045ac4b7c48dcb8aaba53afbcb090ec6"
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"
+
+[dev-dependencies]
